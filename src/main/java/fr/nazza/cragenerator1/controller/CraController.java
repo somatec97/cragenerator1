@@ -24,8 +24,9 @@ public class CraController {
         this.craService = craService;
     }
 
+    //@GetMapping("/generer-pdf")
     @PostMapping("/generer-pdf")
-    @CrossOrigin(origins = "http://localhost:4200")
+    @CrossOrigin("*")//origins = "http://localhost:4200")
     public ResponseEntity<byte[]> genererCraPdf(@RequestBody CraForm craForm) {
         byte[] pdf = craService.genererCraPdf(craForm);
         HttpHeaders headers = new HttpHeaders();
