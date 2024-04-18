@@ -71,7 +71,6 @@ public class CraService {
             //paragraph2.setAlignment(Paragraph.ALIGN_LEFT);
             document.add(paragraph1);
             document.add(Chunk.NEWLINE);
-
             document.close();
 
             return outputStream.toByteArray();
