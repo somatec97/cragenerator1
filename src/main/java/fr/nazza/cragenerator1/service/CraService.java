@@ -29,9 +29,9 @@ public class CraService {
             paragraph.setAlignment(Paragraph.ALIGN_LEFT);
             document.add(paragraph);
             document.add(Chunk.NEWLINE);
-            PdfPTable table = new PdfPTable(2);
+            PdfPTable table = new PdfPTable(3);
             //make column titles
-            Stream.of("Date", "Heures travaillées").forEach(headerDate -> {
+            Stream.of("Date", "Heures travaillées","Taux journalier moyen").forEach(headerDate -> {
                 PdfPCell header = new PdfPCell();
                 com.lowagie.text.Font headFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD);
                 header.setBackgroundColor(Color.LIGHT_GRAY);
@@ -56,15 +56,21 @@ public class CraService {
             hTCell.setBorderWidth(2);
             table.addCell(hTCell);
 
+            PdfPCell tjmCell = new PdfPCell(new Phrase(String.valueOf(craForm.getTjm())));
+            tjmCell.setPaddingLeft(2);
+            tjmCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+            tjmCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+            tjmCell.setBorderWidth(2);
+            table.addCell(tjmCell);
+
             document.add(table);
             document.add(Chunk.NEWLINE);
             Paragraph paragraph1 = new Paragraph("Description: ", fontParagraph);
             paragraph1.setAlignment(Paragraph.ALIGN_LEFT);
-            Paragraph paragraph2 = new Paragraph("Taux journalier moyen: ", fontParagraph);
-            paragraph2.setAlignment(Paragraph.ALIGN_LEFT);
+            //Paragraph paragraph2 = new Paragraph("Taux journalier moyen: ", fontParagraph);
+            //paragraph2.setAlignment(Paragraph.ALIGN_LEFT);
             document.add(paragraph1);
             document.add(Chunk.NEWLINE);
-            document.add(paragraph2);
 
             document.close();
 
@@ -72,6 +78,5 @@ public class CraService {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
     }
 }
