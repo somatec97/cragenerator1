@@ -14,10 +14,16 @@ import java.util.List;
 @ToString
 
 public class CraForm {
-    private final LocalDate date;
-    private final String mois;
-    private final Long annee;
-    private double heuresTravail;
-    private final String description;
-    private final BigDecimal tjm;
+    private String description;
+    private BigDecimal tjm;
+    private List<Ligne> lignes;
+
+@Setter
+@Getter
+@ToString
+ public static class Ligne {
+  private LocalDate date;
+  private double heuresTravail;
+ }
+
 }
