@@ -28,10 +28,7 @@ public class CraService {
             document.add(Chunk.NEWLINE);
             Font fontParagraph = FontFactory.getFont(FontFactory.HELVETICA);
             fontParagraph.setSize(14);
-            Paragraph paragraph = new Paragraph("Description", fontParagraph);
-            paragraph.setAlignment(Paragraph.ALIGN_LEFT);
-            document.add(paragraph);
-            document.add(Chunk.NEWLINE);
+
             PdfPTable table = new PdfPTable(2);
             //make column titles
             Stream.of("Date", "Heures travaillées").forEach(headerDate -> {

@@ -9,9 +9,6 @@ public class CraConfig {
     public void addCorsMapping(CorsRegistry corsRegistry) {
         corsRegistry.addMapping("/**")
                 .allowedOrigins("http://localhost:4200")
-                .allowedMethods("GET", "POST")
-                .allowedHeaders("*")
-                .allowCredentials(true)
                 .maxAge(3600);
     }
 
