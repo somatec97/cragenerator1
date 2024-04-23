@@ -53,20 +53,22 @@ public class CraService {
 
 
             for (CraForm.Ligne ligne : craForm.getLignes()) {
+                for (LocalDate date = ligne.getDateDebut(); !date.isAfter(ligne.getDateFin()); date = date.plusDays(1)) {
 
-                PdfPCell dateCell = new PdfPCell(new Phrase(String.valueOf(ligne.getDate())));
-                dateCell.setPaddingLeft(2);
-                dateCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-                dateCell.setHorizontalAlignment(Element.ALIGN_CENTER);
-                dateCell.setBorderWidth(2);
-                table.addCell(dateCell);
+                    PdfPCell dateCell = new PdfPCell(new Phrase(String.valueOf(date)));
+                    dateCell.setPaddingLeft(2);
+                    dateCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+                    dateCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+                    dateCell.setBorderWidth(2);
+                    table.addCell(dateCell);
 
-                PdfPCell hTCell = new PdfPCell(new Phrase(String.valueOf(ligne.getHeuresTravail())));//get(i))));
-                hTCell.setPaddingLeft(2);
-                hTCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-                hTCell.setHorizontalAlignment(Element.ALIGN_CENTER);
-                hTCell.setBorderWidth(2);
-                table.addCell(hTCell);
+                    PdfPCell hTCell = new PdfPCell(new Phrase(String.valueOf(ligne.getHeuresTravail())));//get(i))));
+                    hTCell.setPaddingLeft(2);
+                    hTCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+                    hTCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+                    hTCell.setBorderWidth(2);
+                    table.addCell(hTCell);
+                }
             }
                 document.add(table);
             document.close();
