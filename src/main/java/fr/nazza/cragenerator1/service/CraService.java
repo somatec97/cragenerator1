@@ -46,7 +46,7 @@ public class CraService {
             document.add(descriptionParagraph);
             document.add(Chunk.NEWLINE);
 
-            Paragraph tjmParagraph = new Paragraph("Tjm: " + craForm.getTjm(), fontParagraph);
+            Paragraph tjmParagraph = new Paragraph("Taux journalier moyen: " + craForm.getTjm(), fontParagraph);
             tjmParagraph.setAlignment(Paragraph.ALIGN_LEFT);
             document.add(tjmParagraph);
             document.add(Chunk.NEWLINE);
@@ -54,7 +54,6 @@ public class CraService {
 
             for (CraForm.Ligne ligne : craForm.getLignes()) {
                 for (LocalDate date = ligne.getDateDebut(); !date.isAfter(ligne.getDateFin()); date = date.plusDays(1)) {
-
                     PdfPCell dateCell = new PdfPCell(new Phrase(String.valueOf(date)));
                     dateCell.setPaddingLeft(2);
                     dateCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
