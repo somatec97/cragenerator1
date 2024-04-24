@@ -7,6 +7,7 @@ import com.lowagie.text.*;
 import com.lowagie.text.Phrase;
 import java.awt.*;
 import java.io.ByteArrayOutputStream;
+import java.time.DayOfWeek;
 import java.time.ZoneId;
 import java.util.stream.Stream;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -77,6 +78,12 @@ public class CraService {
                 }
                 for (LocalDate date = ligne.getDateDebut(); date.isBefore(ligne.getDateFin()) || date.isEqual(ligne.getDateFin()); date = date.plusDays(1)) {
                     LocalDate newDate = date.plusDays(1);
+                    while (newDate.getDayOfWeek() == DayOfWeek.SATURDAY || newDate.getDayOfWeek() == DayOfWeek.SUNDAY){
+                        newDate = newDate.plusDays(1);
+                    }
+                    if (date.getDayOfWeek() == DayOfWeek.FRIDAY) {
+                        date = date.plusDays(2);
+                    }
                     PdfPCell dateCell = new PdfPCell(new Phrase(String.valueOf(newDate)));
                     dateCell.setPaddingLeft(2);
                     dateCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
@@ -91,7 +98,6 @@ public class CraService {
                     hTCell.setBorderWidth(2);
                     table.addCell(hTCell);
                 }
-
             }
                 document.add(table);
             document.close();
