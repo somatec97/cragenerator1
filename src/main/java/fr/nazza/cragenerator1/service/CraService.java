@@ -7,13 +7,19 @@ import com.lowagie.text.*;
 import com.lowagie.text.Phrase;
 import java.awt.*;
 import java.io.ByteArrayOutputStream;
+import java.time.ZoneId;
 import java.util.stream.Stream;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
 
 
+
+
+
+
 @Service
 public class CraService {
+
     public byte[] genererCraPdf(CraForm craForm) {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         try {
@@ -53,21 +59,39 @@ public class CraService {
 
 
             for (CraForm.Ligne ligne : craForm.getLignes()) {
-                for (LocalDate date = ligne.getDateDebut(); !date.isAfter(ligne.getDateFin()); date = date.plusDays(1)) {
-                    PdfPCell dateCell = new PdfPCell(new Phrase(String.valueOf(date)));
+                if (ligne.getDate() != null){
+                    LocalDate newDate = ligne.getDate().plusDays(1);
+                    PdfPCell dateCell = new PdfPCell(new Phrase(String.valueOf(newDate)));
                     dateCell.setPaddingLeft(2);
                     dateCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
                     dateCell.setHorizontalAlignment(Element.ALIGN_CENTER);
                     dateCell.setBorderWidth(2);
                     table.addCell(dateCell);
 
-                    PdfPCell hTCell = new PdfPCell(new Phrase(String.valueOf(ligne.getHeuresTravail())));//get(i))));
+                    PdfPCell hTCell = new PdfPCell(new Phrase(String.valueOf(ligne.getHeuresTavailSeuleDate())));
                     hTCell.setPaddingLeft(2);
                     hTCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
                     hTCell.setHorizontalAlignment(Element.ALIGN_CENTER);
                     hTCell.setBorderWidth(2);
                     table.addCell(hTCell);
                 }
+                for (LocalDate date = ligne.getDateDebut(); date.isBefore(ligne.getDateFin()) || date.isEqual(ligne.getDateFin()); date = date.plusDays(1)) {
+                    LocalDate newDate = date.plusDays(1);
+                    PdfPCell dateCell = new PdfPCell(new Phrase(String.valueOf(newDate)));
+                    dateCell.setPaddingLeft(2);
+                    dateCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+                    dateCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+                    dateCell.setBorderWidth(2);
+                    table.addCell(dateCell);
+
+                    PdfPCell hTCell = new PdfPCell(new Phrase(String.valueOf(ligne.getHeuresTravail())));
+                    hTCell.setPaddingLeft(2);
+                    hTCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+                    hTCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+                    hTCell.setBorderWidth(2);
+                    table.addCell(hTCell);
+                }
+
             }
                 document.add(table);
             document.close();
