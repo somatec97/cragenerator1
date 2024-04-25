@@ -18,8 +18,6 @@ public class CraController {
     public CraController(CraService craService) {
         this.craService = craService;
     }
-
-    //@GetMapping("/generer-pdf")
     @PostMapping("/generer-pdf")
     @CrossOrigin(origins = "http://localhost:4200")
     public ResponseEntity<byte[]> genererCraPdf(@RequestBody CraForm craForm) {

@@ -7,6 +7,7 @@ import com.lowagie.text.*;
 import com.lowagie.text.Phrase;
 import java.awt.*;
 import java.io.ByteArrayOutputStream;
+import java.time.DayOfWeek;
 import java.time.ZoneId;
 import java.util.stream.Stream;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -57,27 +58,19 @@ public class CraService {
             document.add(tjmParagraph);
             document.add(Chunk.NEWLINE);
 
-
             for (CraForm.Ligne ligne : craForm.getLignes()) {
-                if (ligne.getDate() != null){
-                    LocalDate newDate = ligne.getDate().plusDays(1);
-                    PdfPCell dateCell = new PdfPCell(new Phrase(String.valueOf(newDate)));
-                    dateCell.setPaddingLeft(2);
-                    dateCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-                    dateCell.setHorizontalAlignment(Element.ALIGN_CENTER);
-                    dateCell.setBorderWidth(2);
-                    table.addCell(dateCell);
-
-                    PdfPCell hTCell = new PdfPCell(new Phrase(String.valueOf(ligne.getHeuresTavailSeuleDate())));
-                    hTCell.setPaddingLeft(2);
-                    hTCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-                    hTCell.setHorizontalAlignment(Element.ALIGN_CENTER);
-                    hTCell.setBorderWidth(2);
-                    table.addCell(hTCell);
-                }
                 for (LocalDate date = ligne.getDateDebut(); date.isBefore(ligne.getDateFin()) || date.isEqual(ligne.getDateFin()); date = date.plusDays(1)) {
-                    LocalDate newDate = date.plusDays(1);
-                    PdfPCell dateCell = new PdfPCell(new Phrase(String.valueOf(newDate)));
+                    while (date.getDayOfWeek() == DayOfWeek.SATURDAY || date.getDayOfWeek() == DayOfWeek.SUNDAY ){
+                        date = date.plusDays(1);
+                    }
+                    if (date.getDayOfWeek() == DayOfWeek.FRIDAY ) {
+                        date = date.plusDays(2);
+                    }
+                    if (date.equals(ligne.getJourRepos())){
+                        date = date.plusDays(1);
+                    }
+                    LocalDate datePdf = date.plusDays(1);
+                    PdfPCell dateCell = new PdfPCell(new Phrase(String.valueOf(datePdf)));
                     dateCell.setPaddingLeft(2);
                     dateCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
                     dateCell.setHorizontalAlignment(Element.ALIGN_CENTER);
@@ -91,9 +84,8 @@ public class CraService {
                     hTCell.setBorderWidth(2);
                     table.addCell(hTCell);
                 }
-
             }
-                document.add(table);
+            document.add(table);
             document.close();
             return outputStream.toByteArray();
         } catch (Exception e) {
