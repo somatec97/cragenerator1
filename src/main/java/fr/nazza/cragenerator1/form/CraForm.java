@@ -22,7 +22,8 @@ public class CraForm {
 @Getter
 @ToString
  public static class Ligne {
-    private LocalDate date;
+    //private LocalDate date;
+    private LocalDate jourRepos;
   private LocalDate dateDebut;
   private LocalDate dateFin;
   private double heuresTravail;
