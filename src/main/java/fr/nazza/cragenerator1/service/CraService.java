@@ -46,27 +46,28 @@ public class CraService {
             document.add(descriptionParagraph);
             document.add(Chunk.NEWLINE);
 
-            Paragraph tjmParagraph = new Paragraph("Tjm: " + craForm.getTjm(), fontParagraph);
+            Paragraph tjmParagraph = new Paragraph("Taux journalier moyen: " + craForm.getTjm(), fontParagraph);
             tjmParagraph.setAlignment(Paragraph.ALIGN_LEFT);
             document.add(tjmParagraph);
             document.add(Chunk.NEWLINE);
 
 
             for (CraForm.Ligne ligne : craForm.getLignes()) {
+                for (LocalDate date = ligne.getDateDebut(); !date.isAfter(ligne.getDateFin()); date = date.plusDays(1)) {
+                    PdfPCell dateCell = new PdfPCell(new Phrase(String.valueOf(date)));
+                    dateCell.setPaddingLeft(2);
+                    dateCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+                    dateCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+                    dateCell.setBorderWidth(2);
+                    table.addCell(dateCell);
 
-                PdfPCell dateCell = new PdfPCell(new Phrase(String.valueOf(ligne.getDate())));
-                dateCell.setPaddingLeft(2);
-                dateCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-                dateCell.setHorizontalAlignment(Element.ALIGN_CENTER);
-                dateCell.setBorderWidth(2);
-                table.addCell(dateCell);
-
-                PdfPCell hTCell = new PdfPCell(new Phrase(String.valueOf(ligne.getHeuresTravail())));//get(i))));
-                hTCell.setPaddingLeft(2);
-                hTCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-                hTCell.setHorizontalAlignment(Element.ALIGN_CENTER);
-                hTCell.setBorderWidth(2);
-                table.addCell(hTCell);
+                    PdfPCell hTCell = new PdfPCell(new Phrase(String.valueOf(ligne.getHeuresTravail())));//get(i))));
+                    hTCell.setPaddingLeft(2);
+                    hTCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+                    hTCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+                    hTCell.setBorderWidth(2);
+                    table.addCell(hTCell);
+                }
             }
                 document.add(table);
             document.close();
