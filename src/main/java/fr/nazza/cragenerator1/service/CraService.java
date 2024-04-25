@@ -58,17 +58,11 @@ public class CraService {
             document.add(tjmParagraph);
             document.add(Chunk.NEWLINE);
 
-
             for (CraForm.Ligne ligne : craForm.getLignes()) {
-
                 for (LocalDate date = ligne.getDateDebut(); date.isBefore(ligne.getDateFin()) || date.isEqual(ligne.getDateFin()); date = date.plusDays(1)) {
-                    if (date.equals(ligne.getJourRepos())){
-                        continue;
-                    }
                     while (date.getDayOfWeek() == DayOfWeek.SATURDAY || date.getDayOfWeek() == DayOfWeek.SUNDAY ){
                         date = date.plusDays(1);
                     }
-
                     if (date.getDayOfWeek() == DayOfWeek.FRIDAY ) {
                         date = date.plusDays(2);
                     }
@@ -91,7 +85,7 @@ public class CraService {
                     table.addCell(hTCell);
                 }
             }
-                document.add(table);
+            document.add(table);
             document.close();
             return outputStream.toByteArray();
         } catch (Exception e) {
