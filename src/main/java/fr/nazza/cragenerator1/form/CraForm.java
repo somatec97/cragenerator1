@@ -1,32 +1,20 @@
 package fr.nazza.cragenerator1.form;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
-@AllArgsConstructor
-@Getter
-@Setter
-@ToString
 
-public class CraForm {
-    private String description;
-    private BigDecimal tjm;
-    private List<Ligne> lignes;
+public record CraForm(String description, BigDecimal tjm, List<Ligne> lignes) {
 
-@Setter
-@Getter
-@ToString
- public static class Ligne {
-    private LocalDate jourRepos;
-  private LocalDate dateDebut;
-  private LocalDate dateFin;
-  private double heuresTravail;
-  private double heuresTavailSeuleDate;
- }
-
+  public Double heuresTravaillByDate(LocalDate date) {
+    return lignes.stream()
+        .filter(
+            ligne ->
+                (date.isAfter(ligne.dateDebut()) && date.isBefore(ligne.dateFin()))
+                    || date.isEqual(ligne.dateDebut())
+                    || date.isEqual(ligne.dateFin()))
+        .findFirst()
+        .map(ligne -> ligne.heuresTravail())
+        .orElse(0.00);
+  }
 }
