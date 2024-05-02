@@ -4,7 +4,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-public record CraForm(String description, BigDecimal tjm, List<Ligne> lignes) {
+public record CraForm(
+    String description, String client, String projet, BigDecimal tjm, List<Ligne> lignes) {
 
   public Double heuresTravaillByDate(LocalDate date) {
     return lignes.stream()

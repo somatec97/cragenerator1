@@ -8,11 +8,14 @@ import fr.nazza.cragenerator1.form.CraForm;
 import fr.nazza.cragenerator1.form.Ligne;
 import java.awt.*;
 import java.io.ByteArrayOutputStream;
+import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.format.TextStyle;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
@@ -26,8 +29,11 @@ public class CraService {
   public static final String COMPTE_RENDU_D_ACTIVITÉS = "COMPTE RENDU D’ACTIVITÉ (CRA)";
   public static final String HEURES_TRAVAILLÉES = "Heures travaillées";
   public static final String DATE = "Date";
-  public static final String TAUX_JOURNALIER_MOYEN_D = "Taux journalier moyen: %s";
-  public static final String DESCRIPTION_S = "Description: %s";
+  public static final String TAUX_JOURNALIER_MOYEN_D =
+      "Soit un total de %s jours travaillés ce mois ci. Avec un TJM de %s € HT, la facture joint avec ce CRA "
+          + " est de %s € HT";
+  public static final String DESCRIPTION_S =
+      "Description: %s les jours travaillés pour le client final %s sur le projet %s pour le mois de %s %d";
 
   public byte[] genererCraPdf(CraForm craForm) {
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -35,7 +41,6 @@ public class CraService {
       Document document = new Document(PageSize.A4);
       PdfWriter.getInstance(document, outputStream);
       document.open();
-      // add text to pdf
       com.lowagie.text.Font font = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18, Color.BLACK);
       Paragraph para = new Paragraph(COMPTE_RENDU_D_ACTIVITÉS, font);
       para.setAlignment(Element.ALIGN_LEFT);
@@ -63,12 +68,26 @@ public class CraService {
               });
       // add data
       Paragraph descriptionParagraph =
-          new Paragraph(String.format(DESCRIPTION_S, craForm.description()), fontParagraph);
+          new Paragraph(
+              String.format(
+                  DESCRIPTION_S,
+                  craForm.description(),
+                  craForm.client(),
+                  craForm.projet(),
+                  craForm
+                      .lignes()
+                      .get(0)
+                      .dateDebut()
+                      .getMonth()
+                      .getDisplayName(TextStyle.FULL, Locale.FRANCE),
+                  craForm.lignes().get(0).dateDebut().getYear()),
+              fontParagraph);
       descriptionParagraph.setAlignment(Paragraph.ALIGN_LEFT);
       document.add(descriptionParagraph);
       document.add(Chunk.NEWLINE);
 
       var startMonth = Ligne.getDayMonthYear(craForm.lignes().get(0).dateDebut());
+      AtomicInteger numJrTravail = new AtomicInteger();
       startMonth
           .datesUntil(startMonth.plusMonths(1))
           .forEach(
@@ -77,9 +96,12 @@ public class CraService {
                     DateTimeFormatter.ofPattern("EEEE dd MMMM", Locale.FRANCE);
                 String formattedDate = localDate.format(pattern);
                 var heureTravaille = craForm.heuresTravaillByDate(localDate);
+                String nbJrTravail =
+                    (heureTravaille > 0 && !isJourFerie(localDate) && !isWeekEnd(localDate))
+                        ? " ( " + numJrTravail.incrementAndGet() + " ) "
+                        : "";
                 PdfPCell dateCell = createPdfCell(String.valueOf(formattedDate));
-                PdfPCell htCell = createPdfCell("8h");
-                htCell = createPdfCell("  (8h)  " + String.valueOf(heureTravaille));
+                PdfPCell htCell = createPdfCell(String.valueOf(heureTravaille) + nbJrTravail);
 
                 if (isWeekEnd(localDate)) {
                   htCell = createPdfCell("");
@@ -97,7 +119,12 @@ public class CraService {
       document.add(table);
       Paragraph tjmParagraph =
           new Paragraph(
-              String.format(TAUX_JOURNALIER_MOYEN_D, craForm.tjm().toString()), fontParagraph);
+              String.format(
+                  TAUX_JOURNALIER_MOYEN_D,
+                  numJrTravail,
+                  craForm.tjm().toString(),
+                  BigDecimal.valueOf(numJrTravail.get()).multiply(craForm.tjm()),
+                  fontParagraph));
       tjmParagraph.setAlignment(Paragraph.ALIGN_LEFT);
       document.add(tjmParagraph);
       document.add(Chunk.NEWLINE);

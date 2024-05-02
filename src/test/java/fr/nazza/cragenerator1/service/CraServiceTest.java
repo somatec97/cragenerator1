@@ -25,6 +25,8 @@ class CraServiceTest {
     var craForm =
         new CraForm(
             "Bonjour",
+            "EDF",
+            "mission1",
             BigDecimal.valueOf(400l),
             List.of(new Ligne(LocalDate.of(2024, 04, 02), LocalDate.of(2024, 04, 21), 8.0)));
 
@@ -35,7 +37,7 @@ class CraServiceTest {
   @Test
   @Description("test si un jour est férié")
   public void testIsJourFerie() {
-    CraService craService = new CraService();
+    // CraService craService = new CraService();
     LocalDate jourFerie = LocalDate.of(2024, 05, 01);
     assertTrue(craService.isJourFerie(jourFerie), "le jour est férié!");
   }
