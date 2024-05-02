@@ -11,7 +11,7 @@ import java.io.ByteArrayOutputStream;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.time.format.FormatStyle;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.springframework.core.ParameterizedTypeReference;
@@ -23,7 +23,7 @@ import org.springframework.web.client.RestTemplate;
 @Service
 public class CraService {
 
-  public static final String COMPTE_RENDU_D_ACTIVITÉS = "Compte rendu d'activités";
+  public static final String COMPTE_RENDU_D_ACTIVITÉS = "COMPTE RENDU D’ACTIVITÉ (CRA)";
   public static final String HEURES_TRAVAILLÉES = "Heures travaillées";
   public static final String DATE = "Date";
   public static final String TAUX_JOURNALIER_MOYEN_D = "Taux journalier moyen: %s";
@@ -36,9 +36,9 @@ public class CraService {
       PdfWriter.getInstance(document, outputStream);
       document.open();
       // add text to pdf
-      com.lowagie.text.Font font = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18, Color.BLUE);
+      com.lowagie.text.Font font = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18, Color.BLACK);
       Paragraph para = new Paragraph(COMPTE_RENDU_D_ACTIVITÉS, font);
-      para.setAlignment(Element.ALIGN_CENTER);
+      para.setAlignment(Element.ALIGN_LEFT);
       document.add(para);
       document.add(Chunk.NEWLINE);
       Font fontParagraph = FontFactory.getFont(FontFactory.HELVETICA);
@@ -51,11 +51,15 @@ public class CraService {
               headerDate -> {
                 PdfPCell header = new PdfPCell();
                 com.lowagie.text.Font headFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD);
-                header.setBackgroundColor(Color.LIGHT_GRAY);
-                header.setHorizontalAlignment(Element.ALIGN_CENTER);
-                header.setBorderWidth(2);
+                header.setBackgroundColor(Color.ORANGE);
+                header.setHorizontalAlignment(Element.ALIGN_LEFT);
+                header.setVerticalAlignment(Element.ALIGN_MIDDLE);
+                header.setBorderWidth(1);
+                header.setBorderColor(Color.GRAY);
+                header.setFixedHeight(30);
                 header.setPhrase(new Phrase(headerDate, headFont));
                 table.addCell(header);
+                table.setWidthPercentage(100);
               });
       // add data
       Paragraph descriptionParagraph =
@@ -64,27 +68,39 @@ public class CraService {
       document.add(descriptionParagraph);
       document.add(Chunk.NEWLINE);
 
+      var startMonth = Ligne.getDayMonthYear(craForm.lignes().get(0).dateDebut());
+      startMonth
+          .datesUntil(startMonth.plusMonths(1))
+          .forEach(
+              (localDate -> {
+                DateTimeFormatter pattern =
+                    DateTimeFormatter.ofPattern("EEEE dd MMMM", Locale.FRANCE);
+                String formattedDate = localDate.format(pattern);
+                var heureTravaille = craForm.heuresTravaillByDate(localDate);
+                PdfPCell dateCell = createPdfCell(String.valueOf(formattedDate));
+                PdfPCell htCell = createPdfCell("8h");
+                htCell = createPdfCell("  (8h)  " + String.valueOf(heureTravaille));
+
+                if (isWeekEnd(localDate)) {
+                  htCell = createPdfCell("");
+                  dateCell.setBackgroundColor(Color.LIGHT_GRAY);
+                  htCell.setBackgroundColor(Color.LIGHT_GRAY);
+                }
+                if (isJourFerie(localDate)) {
+                  htCell = createPdfCell("");
+                  dateCell.setBackgroundColor(Color.PINK);
+                  htCell.setBackgroundColor(Color.PINK);
+                }
+                table.addCell(dateCell);
+                table.addCell(htCell);
+              }));
+      document.add(table);
       Paragraph tjmParagraph =
           new Paragraph(
               String.format(TAUX_JOURNALIER_MOYEN_D, craForm.tjm().toString()), fontParagraph);
       tjmParagraph.setAlignment(Paragraph.ALIGN_LEFT);
       document.add(tjmParagraph);
       document.add(Chunk.NEWLINE);
-
-      var startMonth = Ligne.getDayMonthYear(craForm.lignes().get(0).dateDebut());
-      startMonth
-          .datesUntil(startMonth.plusMonths(1))
-          .forEach(
-              (localDate -> {
-                DateTimeFormatter pattern = DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG);
-                String formattedDate = localDate.format(pattern);
-                if (!isWeekEnd(localDate) && !isJourFerie(localDate)) {
-                  var heureTravaille = craForm.heuresTravaillByDate(localDate);
-                  table.addCell(createPdfCell(String.valueOf(formattedDate)));
-                  table.addCell(createPdfCell(String.valueOf(heureTravaille)));
-                }
-              }));
-      document.add(table);
       document.close();
       return outputStream.toByteArray();
     } catch (Exception e) {
@@ -97,11 +113,16 @@ public class CraService {
   }
 
   public static PdfPCell createPdfCell(String datePdf) {
-    PdfPCell dateCell = new PdfPCell(new Phrase(datePdf));
-    dateCell.setPaddingLeft(2);
+    com.lowagie.text.Font font = new com.lowagie.text.Font();
+    font.setColor(Color.GRAY);
+    font.setStyle(Font.BOLD);
+    PdfPCell dateCell = new PdfPCell(new Phrase(datePdf, font));
+    dateCell.setPaddingLeft(1);
     dateCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-    dateCell.setHorizontalAlignment(Element.ALIGN_CENTER);
-    dateCell.setBorderWidth(2);
+    dateCell.setHorizontalAlignment(Element.ALIGN_LEFT);
+    dateCell.setBorderWidth(1);
+    dateCell.setBorderColor(Color.GRAY);
+    dateCell.setFixedHeight(30);
     return dateCell;
   }
 
