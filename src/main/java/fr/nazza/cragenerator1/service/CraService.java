@@ -34,105 +34,149 @@ public class CraService {
           + " est de %s € HT";
   public static final String DESCRIPTION_S =
       "Description: %s les jours travaillés pour le client final %s sur le projet %s pour le mois de %s %d";
+  // formatteur de date date
+  private final DateTimeFormatter pattern =
+      DateTimeFormatter.ofPattern("EEEE dd MMMM", Locale.FRANCE);
 
   public byte[] genererCraPdf(CraForm craForm) {
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    try {
-      Document document = new Document(PageSize.A4);
+    try (Document document = new Document(PageSize.A4)) {
+      // La création d'un nouveau document pdf
       PdfWriter.getInstance(document, outputStream);
       document.open();
-      com.lowagie.text.Font font = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18, Color.BLACK);
-      Paragraph para = new Paragraph(COMPTE_RENDU_D_ACTIVITÉS, font);
-      para.setAlignment(Element.ALIGN_LEFT);
-      document.add(para);
-      document.add(Chunk.NEWLINE);
-      Font fontParagraph = FontFactory.getFont(FontFactory.HELVETICA);
-      fontParagraph.setSize(14);
+      // Ajout d'un paragraphe pour le titre
+      document.add(createTitle());
+      newLine(document);
+      // L'ajout du descriptionParagraph au document
+      document.add(createParagraph(craForm));
+      newLine(document);
 
+      // Création d'une table pour ajouter les données
       PdfPTable table = new PdfPTable(2);
-      // make column titles
+      // Créer les titres des colonnes
+      table.setWidthPercentage(100);
       Stream.of(DATE, HEURES_TRAVAILLÉES)
-          .forEach(
-              headerDate -> {
-                PdfPCell header = new PdfPCell();
-                com.lowagie.text.Font headFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD);
-                header.setBackgroundColor(Color.ORANGE);
-                header.setHorizontalAlignment(Element.ALIGN_LEFT);
-                header.setVerticalAlignment(Element.ALIGN_MIDDLE);
-                header.setBorderWidth(1);
-                header.setBorderColor(Color.GRAY);
-                header.setFixedHeight(30);
-                header.setPhrase(new Phrase(headerDate, headFont));
-                table.addCell(header);
-                table.setWidthPercentage(100);
-              });
-      // add data
-      Paragraph descriptionParagraph =
-          new Paragraph(
-              String.format(
-                  DESCRIPTION_S,
-                  craForm.description(),
-                  craForm.client(),
-                  craForm.projet(),
-                  craForm
-                      .lignes()
-                      .get(0)
-                      .dateDebut()
-                      .getMonth()
-                      .getDisplayName(TextStyle.FULL, Locale.FRANCE),
-                  craForm.lignes().get(0).dateDebut().getYear()),
-              fontParagraph);
-      descriptionParagraph.setAlignment(Paragraph.ALIGN_LEFT);
-      document.add(descriptionParagraph);
-      document.add(Chunk.NEWLINE);
-
+          .forEach(headerDate -> table.addCell(createCellHeader(headerDate)));
+      // Récupérer le premier jour du mois
       var startMonth = Ligne.getDayMonthYear(craForm.lignes().get(0).dateDebut());
-      AtomicInteger numJrTravail = new AtomicInteger();
+      // Le compteur AtomicInteger pour compter le nb de jours travaillés
+      AtomicInteger numJrTravaill = new AtomicInteger();
       startMonth
           .datesUntil(startMonth.plusMonths(1))
           .forEach(
               (localDate -> {
-                DateTimeFormatter pattern =
-                    DateTimeFormatter.ofPattern("EEEE dd MMMM", Locale.FRANCE);
-                String formattedDate = localDate.format(pattern);
                 var heureTravaille = craForm.heuresTravaillByDate(localDate);
+                if (heureTravaille == 8 && !isJourFerie(localDate) && !isWeekEnd(localDate)) {
+                  numJrTravaill.addAndGet(2);
+                } else if (heureTravaille == 4
+                    && !isJourFerie(localDate)
+                    && !isWeekEnd(localDate)) {
+                  numJrTravaill.addAndGet(1);
+                }
                 String nbJrTravail =
-                    (heureTravaille > 0 && !isJourFerie(localDate) && !isWeekEnd(localDate))
-                        ? " ( " + numJrTravail.incrementAndGet() + " ) "
+                    heureTravaille > 0
+                        ? String.format(" %.1f (%d) ", heureTravaille, numJrTravaill.get() / 2)
                         : "";
-                PdfPCell dateCell = createPdfCell(String.valueOf(formattedDate));
-                PdfPCell htCell = createPdfCell(String.valueOf(heureTravaille) + nbJrTravail);
 
-                if (isWeekEnd(localDate)) {
-                  htCell = createPdfCell("");
-                  dateCell.setBackgroundColor(Color.LIGHT_GRAY);
-                  htCell.setBackgroundColor(Color.LIGHT_GRAY);
-                }
-                if (isJourFerie(localDate)) {
-                  htCell = createPdfCell("");
-                  dateCell.setBackgroundColor(Color.PINK);
-                  htCell.setBackgroundColor(Color.PINK);
-                }
+                // Cellules pour la date et les heures travaillées
+                PdfPCell dateCell = createPdfCell(localDate.format(pattern));
+                PdfPCell htCell = createPdfCell(nbJrTravail);
+                updateCellsDependingOfDay(isWeekEnd(localDate), Color.LIGHT_GRAY, dateCell, htCell);
+                updateCellsDependingOfDay(isJourFerie(localDate), Color.PINK, dateCell, htCell);
+                updateCellsDependingOfDay(
+                    isJourConge(localDate, heureTravaille), Color.PINK, dateCell, htCell);
+                // L'ajout des cellules à la table
                 table.addCell(dateCell);
                 table.addCell(htCell);
               }));
+      // L'ajout de la table au document
       document.add(table);
-      Paragraph tjmParagraph =
-          new Paragraph(
-              String.format(
-                  TAUX_JOURNALIER_MOYEN_D,
-                  numJrTravail,
-                  craForm.tjm().toString(),
-                  BigDecimal.valueOf(numJrTravail.get()).multiply(craForm.tjm()),
-                  fontParagraph));
-      tjmParagraph.setAlignment(Paragraph.ALIGN_LEFT);
-      document.add(tjmParagraph);
-      document.add(Chunk.NEWLINE);
+      // L'ajout de tjmParagraph au document
+      document.add(createParagraphTjm(craForm, numJrTravaill.get() / 2));
+      newLine(document);
       document.close();
+      // Le return du PDF sous forme de tableau de bytes
       return outputStream.toByteArray();
-    } catch (Exception e) {
-      throw new RuntimeException(e);
     }
+  }
+
+  //  private boolean isJourTravaille(LocalDate localDate, Double heureTravaille) {
+  //    return heureTravaille > 0 && !isJourFerie(localDate) && !isWeekEnd(localDate);
+  //  }
+
+  private boolean isJourConge(LocalDate localDate, Double heureTravaille) {
+    return heureTravaille == 0 && !isJourFerie(localDate) && !isWeekEnd(localDate);
+  }
+
+  private void updateCellsDependingOfDay(
+      boolean condition, Color color, PdfPCell dateCell, PdfPCell htCell) {
+    if (condition) {
+      htCell.getColumn().setText(new Phrase("0h"));
+      dateCell.setBackgroundColor(color);
+      htCell.setBackgroundColor(color);
+    }
+  }
+
+  private static Paragraph createParagraphTjm(CraForm craForm, int numJrTravail) {
+    // Paragraphe tjmParagraph pour la petite conclusion
+    Paragraph tjmParagraph =
+        new Paragraph(
+            String.format(
+                TAUX_JOURNALIER_MOYEN_D,
+                numJrTravail,
+                craForm.tjm().toString(),
+                BigDecimal.valueOf(numJrTravail).multiply(craForm.tjm()),
+                FontFactory.getFont(FontFactory.HELVETICA, 14)));
+    tjmParagraph.setAlignment(Paragraph.ALIGN_LEFT);
+    return tjmParagraph;
+  }
+
+  private static PdfPCell createCellHeader(String headerDate) {
+    // La cellule de header
+    PdfPCell header = new PdfPCell();
+    header.setBackgroundColor(Color.ORANGE);
+    header.setHorizontalAlignment(Element.ALIGN_LEFT);
+    header.setVerticalAlignment(Element.ALIGN_MIDDLE);
+    header.setBorderWidth(1);
+    header.setBorderColor(Color.GRAY);
+    header.setFixedHeight(30);
+    header.setPhrase(new Phrase(headerDate, FontFactory.getFont(FontFactory.HELVETICA_BOLD)));
+    return header;
+  }
+
+  private static Paragraph createParagraph(CraForm craForm) {
+    // paragraphe pour la description
+    Paragraph descriptionParagraph =
+        new Paragraph(
+            String.format(
+                DESCRIPTION_S,
+                craForm.description(),
+                craForm.client(),
+                craForm.projet(),
+                craForm
+                    .lignes()
+                    .get(0)
+                    .dateDebut()
+                    .getMonth()
+                    .getDisplayName(TextStyle.FULL, Locale.FRANCE),
+                craForm.lignes().get(0).dateDebut().getYear()),
+            FontFactory.getFont(FontFactory.HELVETICA, 14));
+    descriptionParagraph.setAlignment(Paragraph.ALIGN_LEFT);
+    return descriptionParagraph;
+  }
+
+  private Paragraph createTitle() {
+    Paragraph para =
+        new Paragraph(
+            COMPTE_RENDU_D_ACTIVITÉS,
+            FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18, Color.BLACK));
+    para.setAlignment(Element.ALIGN_LEFT);
+
+    return para;
+  }
+
+  private static void newLine(Document document) {
+    document.add(Chunk.NEWLINE);
   }
 
   public boolean isJourFerie(LocalDate jourFerie) {
