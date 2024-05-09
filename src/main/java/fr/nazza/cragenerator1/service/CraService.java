@@ -66,19 +66,12 @@ public class CraService {
           .forEach(
               (localDate -> {
                 var heureTravaille = craForm.heuresTravaillByDate(localDate);
-                if (heureTravaille == 8 && !isJourFerie(localDate) && !isWeekEnd(localDate)) {
-                  numJrTravaill.addAndGet(2);
-                } else if (heureTravaille == 4
-                    && !isJourFerie(localDate)
-                    && !isWeekEnd(localDate)) {
-                  numJrTravaill.addAndGet(1);
-                }
+                jourTravail(localDate, heureTravaille, numJrTravaill);
                 String nbJrTravail =
                     heureTravaille > 0
                         ? String.format(" %.1f (%d) ", heureTravaille, numJrTravaill.get() / 2)
                         : "";
 
-                // Cellules pour la date et les heures travaillées
                 PdfPCell dateCell = createPdfCell(localDate.format(pattern));
                 PdfPCell htCell = createPdfCell(nbJrTravail);
                 updateCellsDependingOfDay(isWeekEnd(localDate), Color.LIGHT_GRAY, dateCell, htCell);
@@ -97,6 +90,15 @@ public class CraService {
       document.close();
       // Le return du PDF sous forme de tableau de bytes
       return outputStream.toByteArray();
+    }
+  }
+
+  private void jourTravail(
+      LocalDate localDate, Double heureTravaille, AtomicInteger numJrTravaill) {
+    if (heureTravaille == 8 && !isJourFerie(localDate) && !isWeekEnd(localDate)) {
+      numJrTravaill.addAndGet(2);
+    } else if (heureTravaille == 4 && !isJourFerie(localDate) && !isWeekEnd(localDate)) {
+      numJrTravaill.addAndGet(1);
     }
   }
 
