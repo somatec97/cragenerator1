@@ -207,8 +207,7 @@ public class CraService {
     String uri = "https://calendrier.api.gouv.fr/jours-feries/metropole/2024.json";
     RestTemplate restTemplate = new RestTemplate();
     ResponseEntity<Map<LocalDate, String>> responseEntity =
-        restTemplate.exchange(
-            uri, HttpMethod.GET, null, new ParameterizedTypeReference<Map<LocalDate, String>>() {});
+        restTemplate.exchange(uri, HttpMethod.GET, null, new ParameterizedTypeReference<>() {});
     Map<LocalDate, String> joursFeries = responseEntity.getBody();
     return joursFeries;
   }
